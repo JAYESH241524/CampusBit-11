@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -11,10 +11,10 @@ model Institute {
   id                 String   @id @default(uuid())
   name               String
   address            String
-  branches           String   // Comma-separated branches (e.g., "CSE,ECE,MECH,CIVIL")
-  registrationStatus String   // "PENDING", "APPROVED", "REJECTED"
-  paymentStatus      String   // "UNPAID", "PAID"
-  paymentType        String?  // "ONE_TIME", "ANNUAL_SUBSCRIPTION"
+  branches           String
+  registrationStatus String
+  paymentStatus      String
+  paymentType        String?
   createdAt          DateTime @default(now())
 }
 
@@ -36,8 +36,8 @@ model Admin {
   name         String
   email        String   @unique
   passwordHash String
-  role         String   // "SUPER_ADMIN", "INSTITUTE_ADMIN"
-  instituteId  String?  // Null for Super Admin
+  role         String
+  instituteId  String?
   createdAt    DateTime @default(now())
 }
 
@@ -75,7 +75,7 @@ model EventComment {
 
 model Test {
   id              String   @id @default(uuid())
-  branch          String   // e.g., "CSE", "ECE", "MECH" (or "ALL")
+  branch          String
   title           String
   startTime       DateTime
   endTime         DateTime
@@ -88,20 +88,20 @@ model Question {
   id            String   @id @default(uuid())
   testId        String
   questionText  String
-  options       String   // JSON stringified array of options: '["A", "B", "C", "D"]'
-  correctOption Int      // Index of correct option (0, 1, 2, 3)
+  options       String
+  correctOption Int
   marks         Int
-  questionType  String   // "MCQ" or "CODING"
+  questionType  String
 }
 
 model TestAttempt {
   id             String    @id @default(uuid())
   testId         String
   studentId      String
-  answers        String    // JSON stringified student answers: '{"questionId": selectedOptionIndex}'
+  answers        String
   score          Int       @default(0)
   submittedAt    DateTime?
-  status         String    // "IN_PROGRESS", "COMPLETED", "AUTO_SUBMITTED", "DISQUALIFIED"
+  status         String
   tabSwitchCount Int       @default(0)
   createdAt      DateTime  @default(now())
 
@@ -117,17 +117,17 @@ model TabSwitchLog {
 }
 
 model LeaderboardEntry {
-  id          String   @id @default(uuid())
-  testId      String
-  studentId   String
-  studentName String
-  rollNo      String
-  instituteId String
+  id            String   @id @default(uuid())
+  testId        String
+  studentId     String
+  studentName   String
+  rollNo        String
+  instituteId   String
   instituteName String
-  rank        Int
-  score       Int
-  branch      String
-  submittedAt DateTime @default(now())
+  rank          Int
+  score         Int
+  branch        String
+  submittedAt   DateTime @default(now())
 
   @@unique([testId, studentId])
 }
