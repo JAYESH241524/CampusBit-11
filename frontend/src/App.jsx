@@ -51,6 +51,11 @@ export default function App() {
     setUser(userPayload);
   };
 
+  const handleUserUpdate = (updatedUser) => {
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -188,7 +193,7 @@ export default function App() {
             {/* Admins Dashboard */}
             <Route path="/admin" element={
               <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'INSTITUTE_ADMIN']}>
-                <AdminDashboard user={user} />
+                <AdminDashboard user={user} onUserUpdate={handleUserUpdate} />
               </ProtectedRoute>
             } />
           </Routes>

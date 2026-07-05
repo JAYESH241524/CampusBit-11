@@ -1,4 +1,6 @@
 import prisma from '../utils/db.js';
+import bcrypt from 'bcryptjs';
+
 
 // Super Admin Analytics
 export const getSuperAdminAnalytics = async (req, res) => {
@@ -120,7 +122,11 @@ export const getInstituteDashboard = async (req, res) => {
       stats.averageScore = stats.totalAttempts > 0 ? (stats.totalScore / stats.totalAttempts).toFixed(1) : 0;
     });
 
+    const institute = await prisma.institute.findUnique({ where: { id: instituteId } });
+    const registrationStatus = institute ? institute.registrationStatus : 'PENDING';
+
     return res.json({
+      registrationStatus,
       stats: { studentCount, eventCount },
       students,
       performance: performanceByTest
@@ -144,6 +150,10 @@ export const bulkAddStudents = async (req, res) => {
     const institute = await prisma.institute.findUnique({ where: { id: instituteId } });
     if (!institute) {
       return res.status(404).json({ message: 'Institute not found' });
+    }
+
+    if (institute.registrationStatus !== 'APPROVED') {
+      return res.status(403).json({ message: 'Your institute registration is pending approval. Student rosters remain locked.' });
     }
 
     const availableBranches = institute.branches.split(',').map(b => b.trim());

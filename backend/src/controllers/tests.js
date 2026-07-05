@@ -309,3 +309,91 @@ export const submitTest = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// Get all tests (Super Admin only)
+export const getAllTests = async (req, res) => {
+  try {
+    const tests = await prisma.test.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    const testsWithQuestionCount = await Promise.all(
+      tests.map(async (test) => {
+        const questionCount = await prisma.question.count({ where: { testId: test.id } });
+        return {
+          ...test,
+          questionCount
+        };
+      })
+    );
+    return res.json(testsWithQuestionCount);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Get questions for a specific test (Super Admin only)
+export const getTestQuestions = async (req, res) => {
+  const { testId } = req.params;
+  try {
+    const questions = await prisma.question.findMany({ where: { testId } });
+    const parsedQuestions = questions.map(q => ({
+      ...q,
+      options: JSON.parse(q.options)
+    }));
+    return res.json(parsedQuestions);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Add a question to an existing test (Super Admin only)
+export const addQuestionToTest = async (req, res) => {
+  const { testId } = req.params;
+  const { questionText, options, correctOption, marks, questionType } = req.body;
+
+  if (!questionText || !options || correctOption === undefined) {
+    return res.status(400).json({ message: 'Question text, options, and correctOption are required' });
+  }
+
+  try {
+    const test = await prisma.test.findUnique({ where: { id: testId } });
+    if (!test) {
+      return res.status(404).json({ message: 'Test not found' });
+    }
+
+    const question = await prisma.question.create({
+      data: {
+        testId,
+        questionText,
+        options: JSON.stringify(options),
+        correctOption: parseInt(correctOption),
+        marks: parseInt(marks || 1),
+        questionType: questionType || 'MCQ'
+      }
+    });
+
+    return res.status(201).json({ message: 'Question added successfully', question: { ...question, options } });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Delete a test (Super Admin only)
+export const deleteTest = async (req, res) => {
+  const { testId } = req.params;
+  try {
+    // Delete questions, attempts and logs first
+    await prisma.tabSwitchLog.deleteMany({ where: { testId } });
+    await prisma.testAttempt.deleteMany({ where: { testId } });
+    await prisma.question.deleteMany({ where: { testId } });
+    await prisma.test.delete({ where: { id: testId } });
+    return res.json({ message: 'Test and associated questions/attempts/logs deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
